@@ -1,0 +1,24 @@
+# Ensure the Wolfi OS packages Git repo.
+exec git clone https://github.com/wolfi-dev/os os
+exec cp testdata/pipelines/go/build.yaml os/pipelines/go/
+exec cp testdata/crane.yaml os/
+
+# Test coverage gate.
+! exec apkover -c os/crane.yaml --fail-under 20
+#stdout -count=1 'INF Updating the build pipeline to instrument the package package=crane'
+#stdout -count=1 'INF Updating the test pipeline to generate coverage data package=crane'
+#stdout -count=1 'INF Writing the package config to disk package=crane'
+#stdout -count=1 'INF Re-building the package instrumented package=crane steps=2'
+#stdout -count=1 'INF Running tests and writing coverage data package=crane steps=7'
+stdout -count=1 ' Test Coverage:█████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░14%'
+stderr -count=1 '❌ test coverage is below the minimum required'
+
+exec apkover -c os/crane.yaml --fail-under 10
+#stdout -count=1 'INF Updating the build pipeline to instrument the package package=crane'
+#stdout -count=1 'INF Updating the test pipeline to generate coverage data package=crane'
+#stdout -count=1 'INF Writing the package config to disk package=crane'
+#stdout -count=1 'INF Re-building the package instrumented package=crane steps=2'
+#stdout -count=1 'INF Running tests and writing coverage data package=crane steps=7'
+stdout -count=1 ' Test Coverage:█████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░14%'
+
+exec apkover -c os/crane.yaml -o json 2>/dev/null | jq
