@@ -22,10 +22,6 @@ func PrettyError(err error) {
 	fmt.Fprintf(os.Stderr, "%s❌ %s%s\n", ansiRed, err, ansiReset)
 }
 
-func PrettySuccess(msg string) {
-	fmt.Fprintf(os.Stderr, "%s✔ %s%s\n", ansiGreen, msg, ansiReset)
-}
-
 func PrettyPercentageTest(value, min int, msg string) {
 	var color lipgloss.AdaptiveColor
 	switch {

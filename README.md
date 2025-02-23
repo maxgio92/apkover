@@ -77,6 +77,7 @@ $ apkover --config wolfi-dev/os/crane.yaml --output=json 2>/dev/null | jq
 
 The supported language now is:
 * `go`
+* `rust`
 
 Support for additional language is yet to be implemented.
 
@@ -84,6 +85,10 @@ Support for additional language is yet to be implemented.
 
 APKover leverages the Go [Coverage profiling support for integration tests](https://go.dev/doc/build-cover)
 to build the Go binary instrumented for measurement and coverage data analysis with the `covdata` Go tool.
+
+#### Rust
+
+APKover leverages the [`llvm.instrprof.increment` LLVM intrinsic](https://llvm.org/docs/LangRef.html#llvm-instrprof-increment-intrinsic) to instrument the binary via the `rustc` `-C instrument-coverage` flag, and `llvm-profdata` and `llvm-cov` LLVM tools to merge coverage data and produce a report, respectively.
 
 ### Packages
 

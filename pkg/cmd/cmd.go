@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -22,6 +23,7 @@ import (
 	"github.com/maxgio92/apkover/internal/output"
 	"github.com/maxgio92/apkover/internal/utils"
 	gopipeline "github.com/maxgio92/apkover/pkg/pipeline/go"
+	rustpipeline "github.com/maxgio92/apkover/pkg/pipeline/rust"
 	"github.com/maxgio92/apkover/pkg/report"
 )
 
@@ -86,7 +88,7 @@ func (o *Options) Run(_ *cobra.Command, _ []string) error {
 	// Update the build pipeline.
 	log.Info().Str("package", pkgName).Msg("Updating the build pipeline to instrument the package")
 
-	err = updateBuildPipeline(cfg.Pipeline, o.Language)
+	err = updateBuildPipeline(cfg, o.Language)
 	if err != nil {
 		return err
 	}
@@ -143,7 +145,7 @@ func (o *Options) Run(_ *cobra.Command, _ []string) error {
 	)
 	switch o.Output {
 	case "text":
-		output.PrettyPercentageTest(int(rprt.CovFloat*100), int(o.MinCov), "Test Coverage")
+		output.PrettyPercentageTest(int(math.Ceil(rprt.CovFloat*100)), int(o.MinCov), "Test Coverage")
 	case "json":
 		b, err := json.Marshal(rprt)
 		if err != nil {
@@ -157,7 +159,7 @@ func (o *Options) Run(_ *cobra.Command, _ []string) error {
 		}
 		fmt.Println(string(b))
 	default:
-		output.PrettyPercentageTest(int(rprt.CovFloat*100), int(o.MinCov), "Test Coverage")
+		output.PrettyPercentageTest(int(math.Ceil(rprt.CovFloat*100)), int(o.MinCov), "Test Coverage")
 	}
 
 	// Coverage is too low.
@@ -171,10 +173,12 @@ func (o *Options) Run(_ *cobra.Command, _ []string) error {
 
 // updateBuildPipeline updates the language specific build pipelines to generate
 // coverage measurement instrumented artifacts like executable binaries.
-func updateBuildPipeline(build []melange.Pipeline, lang string) error {
+func updateBuildPipeline(build *melange.Configuration, lang string) error {
 	switch lang {
 	case "go":
 		return gopipeline.UpdateBuild(build)
+	case "rust":
+		return rustpipeline.UpdateBuild(build)
 	default:
 		return gopipeline.UpdateBuild(build)
 	}
@@ -184,6 +188,8 @@ func updateTest(test *melange.Test, lang string) error {
 	switch lang {
 	case "go":
 		return gopipeline.UpdateTest(test)
+	case "rust":
+		return rustpipeline.UpdateTest(test)
 	default:
 		return gopipeline.UpdateTest(test)
 	}
@@ -256,7 +262,7 @@ func parseMelangeStdout(text string) {
 // TODO: abstract log parser from coverage collector.
 func parseMelangeStderr(text string) error {
 	// Retrieve coverage percentage from stdout.
-	if strings.Contains(text, "INFO apkoverage:") {
+	if strings.Contains(text, fmt.Sprintf("INFO %s", report.ReportCovPrefix)) {
 		cov, err := extractCovFromLog(text)
 		if err != nil {
 			log.Error().Err(err).Msg("error extracting coverage")
@@ -279,7 +285,7 @@ func parseMelangeStderr(text string) error {
 }
 
 func extractCovFromLog(text string) (float64, error) {
-	re := regexp.MustCompile(`apkoverage: (\d+\.\d{1})%`)
+	re := regexp.MustCompile(fmt.Sprintf(`%s (\d+\.\d+)%%`, report.ReportCovPrefix))
 	match := re.FindStringSubmatch(text)
 	if len(match) <= 1 {
 		log.Warn().Msgf("cannot extract coverage percentage from log: %s", text)
