@@ -11,8 +11,10 @@ exec cp testdata/ztunnel-1.24.yaml os/
 ! exec apkover -c os/crane.yaml --fail-under 20
 stdout -count=1 ' Test Coverage:██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░15%'
 stderr -count=1 '❌ test coverage is below the minimum required'
+
 exec apkover -c os/crane.yaml --fail-under 10
 stdout -count=1 ' Test Coverage:██████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░15%'
+
 ! exec apkover -c os/ztunnel-1.24.yaml --language rust --fail-under 1
 stdout -count=1 ' Test Coverage:░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░1%'
 stderr -count=1 '❌ test coverage is below the minimum required'
