@@ -6,9 +6,9 @@ import (
 	melange "chainguard.dev/melange/pkg/config"
 )
 
-func UpdateBuild(pipeline []melange.Pipeline) error {
+func UpdateBuild(build *melange.Configuration) error {
 	var found bool
-	for _, step := range pipeline {
+	for _, step := range build.Pipeline {
 		// go build as built-in Melange pipeline.
 		if step.Uses == "go/build" {
 			found = true
