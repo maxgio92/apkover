@@ -22,8 +22,7 @@ import (
 
 	"github.com/maxgio92/apkover/internal/output"
 	"github.com/maxgio92/apkover/internal/utils"
-	gopipeline "github.com/maxgio92/apkover/pkg/pipeline/go"
-	rustpipeline "github.com/maxgio92/apkover/pkg/pipeline/rust"
+	"github.com/maxgio92/apkover/pkg/pipeline"
 	"github.com/maxgio92/apkover/pkg/report"
 )
 
@@ -85,18 +84,23 @@ func (o *Options) Run(_ *cobra.Command, _ []string) error {
 
 	pkgName := cfg.Name()
 
-	// Update the build pipeline.
+	update := pipeline.GetUpdater(o.Language)
+	if update == nil {
+		return errors.New("could not find a pipeline updater for the specified language")
+	}
+
 	log.Info().Str("package", pkgName).Msg("Updating the build pipeline to instrument the package")
 
-	err = updateBuildPipeline(cfg, o.Language)
+	// Update the build pipeline.
+	err = update.UpdateBuild(cfg)
 	if err != nil {
 		return err
 	}
 
-	// Update the test pipeline.
 	log.Info().Str("package", pkgName).Msg("Updating the test pipeline to generate coverage data")
 
-	err = updateTest(cfg.Test, o.Language)
+	// Update the test pipeline.
+	err = update.UpdateTest(cfg.Test)
 	if err != nil {
 		return err
 	}
@@ -169,30 +173,6 @@ func (o *Options) Run(_ *cobra.Command, _ []string) error {
 
 	// Coverage is enough.
 	return nil
-}
-
-// updateBuildPipeline updates the language specific build pipelines to generate
-// coverage measurement instrumented artifacts like executable binaries.
-func updateBuildPipeline(build *melange.Configuration, lang string) error {
-	switch lang {
-	case "go":
-		return gopipeline.UpdateBuild(build)
-	case "rust":
-		return rustpipeline.UpdateBuild(build)
-	default:
-		return gopipeline.UpdateBuild(build)
-	}
-}
-
-func updateTest(test *melange.Test, lang string) error {
-	switch lang {
-	case "go":
-		return gopipeline.UpdateTest(test)
-	case "rust":
-		return rustpipeline.UpdateTest(test)
-	default:
-		return gopipeline.UpdateTest(test)
-	}
 }
 
 // runMelange runs Melange via the Wolfi Make targets.
