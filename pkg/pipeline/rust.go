@@ -1,4 +1,4 @@
-package rust
+package pipeline
 
 import (
 	"fmt"
@@ -7,6 +7,11 @@ import (
 	melange "chainguard.dev/melange/pkg/config"
 
 	"github.com/maxgio92/apkover/pkg/report"
+)
+
+const (
+	envRustFlags = "RUSTFLAGS"
+	rustFlags    = "-C instrument-coverage"
 )
 
 var (
@@ -23,7 +28,22 @@ llvm-cov report \
   | tail -1 | awk '{print $7}'`, report.ReportCovPrefix)
 )
 
-func UpdateTest(test *melange.Test) error {
+type RustPipelineUpdater struct{}
+
+func init() {
+	registerUpdater("rust", new(RustPipelineUpdater))
+}
+
+func (u *RustPipelineUpdater) UpdateBuild(build *melange.Configuration) error {
+	if build.Environment.Environment == nil {
+		build.Environment.Environment = make(map[string]string, 1)
+	}
+	build.Environment.Environment[envRustFlags] = rustFlags
+
+	return nil
+}
+
+func (u *RustPipelineUpdater) UpdateTest(test *melange.Test) error {
 	// Update test time dependencies.
 	if test.Environment.Contents.Packages == nil {
 		test.Environment.Contents.Packages = make([]string, 2)
